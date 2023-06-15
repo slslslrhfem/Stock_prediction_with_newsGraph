@@ -135,11 +135,11 @@ checkpoint와 strategy는 동일한 strategy여야합니다!
 
 ---
 
-https://github.com/SKTBrain/KoBERT/tree/master/kobert_hf Kobert
-https://arxiv.org/pdf/2110.07190.pdf WHY PROPAGATE ALONE? PARALLEL USE OF LABELS AND FEATURES ON GRAPHS
-https://arxiv.org/pdf/2103.13355v4.pdf Bag of Tricks for Node Classification with Graph Neural Networks
-https://arxiv.org/pdf/2009.03509v5.pdf  Masked Label Prediction: Unified Message Passing Model for Semi-Supervised Classification
-https://link.springer.com/article/10.1007/s11042-022-13231-1 A graph neural network-based stock forecasting method utilizing multi-source heterogeneous data fusion
+- https://github.com/SKTBrain/KoBERT/tree/master/kobert_hf Kobert
+- https://arxiv.org/pdf/2110.07190.pdf WHY PROPAGATE ALONE? PARALLEL USE OF LABELS AND FEATURES ON GRAPHS
+- https://arxiv.org/pdf/2103.13355v4.pdf Bag of Tricks for Node Classification with Graph Neural Networks
+- https://arxiv.org/pdf/2009.03509v5.pdf  Masked Label Prediction: Unified Message Passing Model for Semi-Supervised Classification
+- https://link.springer.com/article/10.1007/s11042-022-13231-1 A graph neural network-based stock forecasting method utilizing multi-source heterogeneous data fusion
 
 ---
 
