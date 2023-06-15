@@ -1,4 +1,4 @@
-# Korea Stock Prediction with Naver news embedding Graph
+# Stock Prediction Graph Neural Network with Korean News Embedding
 
 ## Description
 
