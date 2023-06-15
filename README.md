@@ -99,9 +99,6 @@ python main.py train_gnn {date} {strategy}
 일단 50000epoch으로 설정해두고, 50epoch마다 저장되도록 합니다. 1epoch당 5초쯤 걸립니다. 
 
 
-신기하게 빠르게 수렴하지않고, 30000epoch이 넘어가도 학습 하면서 더 loss가 줄어듭니다(validation도!).
-
-
 **4. Inference**
    
 ```
