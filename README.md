@@ -69,7 +69,7 @@ python main.py data_preprocessing
 뉴스 데이터는 Multiprocess사용시 15분내외, 아니면 3시간 내외쯤, 주가 데이터는 30분 내외쯤 걸립니다.
 
 
- KRX에서 IP 차단을 가끔 먹입니다. ```(expecting value: line 1 column 1 (char 0)``` 이 에러가 뜹니다)
+ KRX에서 IP 차단을 가끔 먹입니다. ```expecting value: line 1 column 1 (char 0)``` 이 에러가 뜹니다
 
 
 코드 실행이 끝나면 dataset{날짜}의 폴더가 생기고, 내부에 sector와 회사명 별로 정리된 폴더들이 생깁니다.
