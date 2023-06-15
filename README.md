@@ -45,12 +45,14 @@ KOSPI와 KOSDAQ 데이터를 pykrx모듈로 수집하고, 네이버 뉴스의 �
 
 **1. 라이브러리 설치**
 
+환경에 맞게 [Pytorch](https://pytorch.org/get-started/locally/)와 [Deep Graph Library](https://www.dgl.ai/pages/start.html)를 설치해주세요.
+
+
 ```
 pip install -r requirements.txt
 ```
 
-를 통해 라이브러리들을 받아주시고, 환경에 맞게 [Pytorch](https://pytorch.org/get-started/locally/)와 [Deep Graph Library](https://www.dgl.ai/pages/start.html)를 설치해주세요.
-본 프로젝트는 [Wandb](https://wandb.ai/home) logging을 하도록 구현되어 있습니다. 
+를 통해 라이브러리들을 설치해주세요. 또한 본 프로젝트는 [Wandb](https://wandb.ai/home) logging을 하도록 구현되어 있습니다. 따라서 계정이 필요하거나, 코드를 수정할 필요가 있을 수도 있습니다.
 
 **2. Preprocessing**
 
