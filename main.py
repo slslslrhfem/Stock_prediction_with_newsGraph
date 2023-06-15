@@ -1,9 +1,8 @@
 from data_preprocessing import data_preprocessing
-from news_crawling import start_crawling
 from graph_construct import graph_construct
 from graph_training import train_gnn, predict_price
 import sys
-import os
+
 def main():
     if sys.argv[1]=='data_preprocessing':
         data_preprocessing()

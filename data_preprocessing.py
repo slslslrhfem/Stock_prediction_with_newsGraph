@@ -11,6 +11,7 @@ from news_crawling import start_crawling
 import pickle
 import time
 import torch
+import multiprocessing
 
 from torch import nn, Tensor
 from torch.optim import Optimizer
@@ -36,8 +37,6 @@ def data_preprocessing():
     trade_data = stock.get_market_ohlcv(start_date, end_date, ticker_list[0])
     adding_list=trade_data.reset_index().values.tolist()
     minlen=len(adding_list)
-
-    
     
     for ticker, name, Sector in tqdm(zip(ticker_list, name_list, Sector_Label)): # 뉴스 크롤링
         meta_dict = {}
@@ -49,9 +48,15 @@ def data_preprocessing():
         os.makedirs(os.path.dirname(filename), exist_ok=True)
         with open(filename,'wb') as fw:
             pickle.dump(meta_dict, fw)
-        
-        start_crawling(name, Sector)
+        #start_crawling(name,Sector)
 
+    print('News를 크롤링 해옵니다')
+    with multiprocessing.Pool(5) as p: # 근데 이 코드가 돌다가 Port에러가 뜨기도 합니다.(아마 한 CPU에 Task 2개가 동시에 할당 되면 그런 것 같습니다) 
+        #본 경우에넌 Pool 안에 있는 숫자 5를 줄여보시고, 그래도 안되면 위 loop내의 start_crawling(name,Sector) 주석을 삭제하고 아래 코드 1줄을 지운 뒤 해보시길 바랍니다! 속도차이는 5배 넘게 나는 것 같습니다..
+        r= list(tqdm(p.imap(start_crawling, zip(name_list, Sector_Label)), total=len(name_list)))
+        
+
+    print("주가를 크롤링 해옵니다.")
     for tickers in tqdm(ticker_list,position=0): # 주가 크롤링
         try:
             time.sleep(0.5)
