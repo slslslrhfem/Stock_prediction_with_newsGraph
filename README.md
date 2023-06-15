@@ -56,7 +56,6 @@ pip install -r Requirements.txt
 
 **2. Preprocessing**
 
-먼저
 
 ```
 python main.py data_preprocessing
@@ -73,9 +72,6 @@ python main.py data_preprocessing
 
 
 코드 실행이 끝나면 dataset{날짜}의 폴더가 생기고, 내부에 sector와 회사명 별로 정리된 폴더들이 생깁니다.
-
-
-다음
 
 
 ```
