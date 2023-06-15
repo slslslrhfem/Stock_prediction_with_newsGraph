@@ -4,30 +4,40 @@
 
 
 본 모델은 Graph Neural Network와 KOBERT 등의 모델을 활용하여 뉴스데이터를 정제하여 주가를 예측하는 모델입니다.
+
+
 KOSPI와 KOSDAC 데이터를 pykrx모듈로 수집하고, 네이버 뉴스의 제목과 본문(썸네일 본문으로, 본문 전체는 아닙니다)을 bs4 모듈로 수집하여 활용합니다.
+
+
 제목과 본문은 Pretrain된 KOBERT를 활용하여 Top10까지 모아서 Length 768의 Embedding을 구해둡니다.
 
 
 위 데이터들로 Graph를 구성하게 되는데, 각 Node의 Feature로는 다음 데이터들이 Embedding되어 사용됩니다.
 
 
--Node의 상대적인 날짜. 예를 들어 15일 ~ 19일의 데이터를 사용한다면 0(15일)~4(19일)의 값이 각 날짜에 할당됩니다.
--Top10 본문 Embedding.
--Top10 제목 Embedding.
--종가. 종목별로 Minmax scaling되어 들어갑니다
--등락율. 전일 종가대비 금일 종가의 비율을 %로 나타낸 것입니다.
--이익율. 실제로 거래를 한다고 생각했을 때를 생각한 지표입니다. 당일 시가대비 금일 종가의 비율을 %로 나타낸 것입니다.
--거래량. 값이 Log scale되어 들어갑니다.
--섹터. 회사의 Sector 정보가 들어갑니다. 회사별로 일정 Label이 주어지고(utils.py의 Label Changer 함수를 참고해주세요), one hot encoding되어서 들어갑니다.
--Ticker. 회사의 Ticker 정보입니다. 학습 때는 안 씁니다.
--Max Price & Min Price. Minmax scaling에 사용한 Max price와 Min Price가 들어갑니다. 
+- Node의 상대적인 날짜. 예를 들어 15일 ~ 19일의 데이터를 사용한다면 0(15일)~4(19일)의 값이 각 날짜에 할당됩니다.
+- Top10 본문 Embedding.
+- Top10 제목 Embedding.
+- 종가. 종목별로 Minmax scaling되어 들어갑니다
+- 등락율. 전일 종가대비 금일 종가의 비율을 %로 나타낸 것입니다.
+- 이익율. 실제로 거래를 한다고 생각했을 때를 생각한 지표입니다. 당일 시가대비 금일 종가의 비율을 %로 나타낸 것입니다.
+- 거래량. 값이 Log scale되어 들어갑니다.
+- 섹터. 회사의 Sector 정보가 들어갑니다. 회사별로 일정 Label이 주어지고(utils.py의 Label Changer 함수를 참고해주세요), one hot encoding되어서 들어갑니다.
+- Ticker. 회사의 Ticker 정보입니다. 학습 때는 안 씁니다.
+- Max Price & Min Price. Minmax scaling에 사용한 Max price와 Min Price가 들어갑니다. 
+
+
 
 각 Edge의 Feature는 다음과 같습니다.
 
--날짜 Edge. 전날에서 다음날로 넘아가는 Node 둘을 연결합니다. 양방향 모두 연결하되, 다른 Edge Feature로써 인식되게끔 사용했습니다.
--뉴스 Edge. A회사의 뉴스나 뉴스 제목에서 B회사가 언급되면 A에서 B로 연결합니다. 이 역시 역방향도 연결하나, 다른 Edge Feature로써 인식되도록 사용했습니다.
--Max Volume Edge. 각 종목별로, 가장 거래량이 높은 날짜에 모든 노드를 연결합니다. 양방향 모두 연결하되, 다른 Edge Feature로써 인식되게끔 사용했습니다.
--Min Volume Edge. 각 종목별로, 가장 거래량이 낮은 날짜에 모든 노드를 연결합니다. 양방향 모두 연결하되, 다른 Edge Feature로써 인식되게끔 사용했습니다.
+
+
+- 날짜 Edge. 전날에서 다음날로 넘아가는 Node 둘을 연결합니다. 양방향 모두 연결하되, 다른 Edge Feature로써 인식되게끔 사용했습니다.
+- 뉴스 Edge. A회사의 뉴스나 뉴스 제목에서 B회사가 언급되면 A에서 B로 연결합니다. 이 역시 역방향도 연결하나, 다른 Edge Feature로써 인식되도록 사용했습니다.
+- Max Volume Edge. 각 종목별로, 가장 거래량이 높은 날짜에 모든 노드를 연결합니다. 양방향 모두 연결하되, 다른 Edge Feature로써 인식되게끔 사용했습니다.
+- Min Volume Edge. 각 종목별로, 가장 거래량이 낮은 날짜에 모든 노드를 연결합니다. 양방향 모두 연결하되, 다른 Edge Feature로써 인식되게끔 사용했습니다. 
+
+
 
 *Edge의 경우 특히나 고민을 많이한게 시간 순서가 반대로 된 Edge를 포함해야하나 싶었는데(18일을 예측할때 20일 데이터를 사용할 수 있는 구조), Hidden State Update를 굳이 못하게 할 이유도 없는 것 같아 그냥 사용합니다.
 
@@ -35,7 +45,7 @@ KOSPI와 KOSDAC 데이터를 pykrx모듈로 수집하고, 네이버 뉴스의 �
 
 ## How to use this model
 
-###1. 라이브러리 설치
+**1. 라이브러리 설치**
 
 ```
 pip install -r Requirements.txt
@@ -44,7 +54,7 @@ pip install -r Requirements.txt
 를 통해 라이브러리들을 받아주시고, 환경에 맞게 Pytorch(https://pytorch.org/get-started/locally/)와 Deep Graph Library(https://www.dgl.ai/pages/start.html)를 설치해주세요.
 본 프로젝트는 Wandb logging을 하도록 구현되어 있습니다. 
 
-###2. Preprocessing
+**2. Preprocessing**
 
 먼저
 
@@ -77,7 +87,7 @@ python main.py graph_construct {date}
 각 그래프는 training{date}.bin, inference{date}.bin으로 저장됩니다.
 
 
-###3. Training
+**3. Training**
 
 
 ```
@@ -91,7 +101,7 @@ python main.py train_gnn {date} {strategy}
 신기하게 빠르게 수렴하지않고, 30000epoch이 넘어가도 학습 하면서 더 loss가 줄어듭니다(validation도!). 다만 그게 미래의 데이터를 꼭 잘 맞춘다는 것을 보장하지는 아마 않을겁니다..?
 
 
-###4. Inference
+**4. Inference**
    
 ```
 python main.py predict_price {checkpoint_path} {date} {strategy}
