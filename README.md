@@ -1,5 +1,5 @@
 # Korea Stock Prediction with Naver news embedding Graph
----
+
 ## Description
 
 
@@ -13,6 +13,8 @@ KOSPI와 KOSDAC 데이터를 pykrx모듈로 수집하고, 네이버 뉴스의 �
 
 
 위 데이터들로 Graph를 구성하게 되는데, 각 Node의 Feature로는 다음 데이터들이 Embedding되어 사용됩니다.
+
+---
 
 
 - **Node의 상대적인 날짜.** 예를 들어 15일 ~ 19일의 데이터를 사용한다면 0(15일)~4(19일)의 값이 각 날짜에 할당됩니다.
@@ -30,7 +32,7 @@ KOSPI와 KOSDAC 데이터를 pykrx모듈로 수집하고, 네이버 뉴스의 �
 
 각 Edge의 Feature는 다음과 같습니다.
 
-
+---
 
 - **날짜 Edge** 전날에서 다음날로 넘아가는 Node 둘을 연결합니다. 양방향 모두 연결하되, 다른 Edge Feature로써 인식되게끔 사용했습니다.
 - **뉴스 Edge** A회사의 뉴스나 뉴스 제목에서 B회사가 언급되면 A에서 B로 연결합니다. 이 역시 역방향도 연결하나, 다른 Edge Feature로써 인식되도록 사용했습니다.
@@ -38,10 +40,6 @@ KOSPI와 KOSDAC 데이터를 pykrx모듈로 수집하고, 네이버 뉴스의 �
 - **Min Volume Edge** 각 종목별로, 가장 거래량이 낮은 날짜에 모든 노드를 연결합니다. 양방향 모두 연결하되, 다른 Edge Feature로써 인식되게끔 사용했습니다. 
 
 
-
-*Edge의 경우 시간 순서가 반대로 된 Edge를 포함해야하나 싶었는데(18일을 예측할때 20일 데이터를 사용할 수 있는 구조), Hidden State Update를 굳이 못하게 할 이유도 없는 것 같아 그냥 사용합니다.
-
-그 후, 위 그래프를 활용하여 마지막 날의 데이터를 예측하게 됩니다. 예측하는 데이터는 종가/등락율/이익율 중 하나입니다.(구현 상 3개 모드 중 하나를 하도록 되어있습니다.)
 
 ## How to use this model
 
