@@ -25,7 +25,7 @@ KOSPI와 KOSDAQ 데이터를 pykrx모듈로 수집하고, 네이버 뉴스의 �
 - **이익율** 금일 시가대비 금일 종가의 비율을 %로 나타낸 것입니다.
 - **거래량** 값이 Log scale되어 들어갑니다.
 - **섹터** 회사의 Sector 정보가 들어갑니다. 회사별로 일정 Label이 주어지고(utils.py의 Label Changer 함수를 참고해주세요), one hot encoding되어서 들어갑니다.
-- **Ticker** 회사의 Ticker 정보입니다. 학습 때는 안 씁니다.
+- **Ticker** 회사의 Ticker 정보입니다. 학습 때는 안 쓰고, 마지막 Inference때 씁니다.
 - **최고/최저가격** Minmax scaling에 사용한 Max price와 Min Price가 들어갑니다. 
 
 ---
