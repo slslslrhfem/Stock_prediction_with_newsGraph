@@ -15,16 +15,16 @@ KOSPI와 KOSDAC 데이터를 pykrx모듈로 수집하고, 네이버 뉴스의 �
 위 데이터들로 Graph를 구성하게 되는데, 각 Node의 Feature로는 다음 데이터들이 Embedding되어 사용됩니다.
 
 
-- Node의 상대적인 날짜. 예를 들어 15일 ~ 19일의 데이터를 사용한다면 0(15일)~4(19일)의 값이 각 날짜에 할당됩니다.
-- Top10 본문 Embedding.
-- Top10 제목 Embedding.
-- 종가. 종목별로 Minmax scaling되어 들어갑니다
-- 등락율. 전일 종가대비 금일 종가의 비율을 %로 나타낸 것입니다.
-- 이익율. 실제로 거래를 한다고 생각했을 때를 생각한 지표입니다. 당일 시가대비 금일 종가의 비율을 %로 나타낸 것입니다.
-- 거래량. 값이 Log scale되어 들어갑니다.
-- 섹터. 회사의 Sector 정보가 들어갑니다. 회사별로 일정 Label이 주어지고(utils.py의 Label Changer 함수를 참고해주세요), one hot encoding되어서 들어갑니다.
-- Ticker. 회사의 Ticker 정보입니다. 학습 때는 안 씁니다.
-- Max Price & Min Price. Minmax scaling에 사용한 Max price와 Min Price가 들어갑니다. 
+- **Node의 상대적인 날짜.** 예를 들어 15일 ~ 19일의 데이터를 사용한다면 0(15일)~4(19일)의 값이 각 날짜에 할당됩니다.
+- **Top10 본문 Embedding**
+- **Top10 제목 Embedding**
+- **종가** 종목별로 Minmax scaling되어 들어갑니다
+- **등락율** 전일 종가대비 금일 종가의 비율을 %로 나타낸 것입니다.
+- **이익율** 당일 시가대비 금일 종가의 비율을 %로 나타낸 것입니다.
+- **거래량** 값이 Log scale되어 들어갑니다.
+- **섹터** 회사의 Sector 정보가 들어갑니다. 회사별로 일정 Label이 주어지고(utils.py의 Label Changer 함수를 참고해주세요), one hot encoding되어서 들어갑니다.
+- **Ticker** 회사의 Ticker 정보입니다. 학습 때는 안 씁니다.
+- **최고/최저가격** Minmax scaling에 사용한 Max price와 Min Price가 들어갑니다. 
 
 
 
@@ -32,14 +32,14 @@ KOSPI와 KOSDAC 데이터를 pykrx모듈로 수집하고, 네이버 뉴스의 �
 
 
 
-- 날짜 Edge. 전날에서 다음날로 넘아가는 Node 둘을 연결합니다. 양방향 모두 연결하되, 다른 Edge Feature로써 인식되게끔 사용했습니다.
-- 뉴스 Edge. A회사의 뉴스나 뉴스 제목에서 B회사가 언급되면 A에서 B로 연결합니다. 이 역시 역방향도 연결하나, 다른 Edge Feature로써 인식되도록 사용했습니다.
-- Max Volume Edge. 각 종목별로, 가장 거래량이 높은 날짜에 모든 노드를 연결합니다. 양방향 모두 연결하되, 다른 Edge Feature로써 인식되게끔 사용했습니다.
-- Min Volume Edge. 각 종목별로, 가장 거래량이 낮은 날짜에 모든 노드를 연결합니다. 양방향 모두 연결하되, 다른 Edge Feature로써 인식되게끔 사용했습니다. 
+- **날짜 Edge** 전날에서 다음날로 넘아가는 Node 둘을 연결합니다. 양방향 모두 연결하되, 다른 Edge Feature로써 인식되게끔 사용했습니다.
+- **뉴스 Edge** A회사의 뉴스나 뉴스 제목에서 B회사가 언급되면 A에서 B로 연결합니다. 이 역시 역방향도 연결하나, 다른 Edge Feature로써 인식되도록 사용했습니다.
+- **Max Volume Edge** 각 종목별로, 가장 거래량이 높은 날짜에 모든 노드를 연결합니다. 양방향 모두 연결하되, 다른 Edge Feature로써 인식되게끔 사용했습니다.
+- **Min Volume Edge** 각 종목별로, 가장 거래량이 낮은 날짜에 모든 노드를 연결합니다. 양방향 모두 연결하되, 다른 Edge Feature로써 인식되게끔 사용했습니다. 
 
 
 
-*Edge의 경우 특히나 고민을 많이한게 시간 순서가 반대로 된 Edge를 포함해야하나 싶었는데(18일을 예측할때 20일 데이터를 사용할 수 있는 구조), Hidden State Update를 굳이 못하게 할 이유도 없는 것 같아 그냥 사용합니다.
+*Edge의 경우 시간 순서가 반대로 된 Edge를 포함해야하나 싶었는데(18일을 예측할때 20일 데이터를 사용할 수 있는 구조), Hidden State Update를 굳이 못하게 할 이유도 없는 것 같아 그냥 사용합니다.
 
 그 후, 위 그래프를 활용하여 마지막 날의 데이터를 예측하게 됩니다. 예측하는 데이터는 종가/등락율/이익율 중 하나입니다.(구현 상 3개 모드 중 하나를 하도록 되어있습니다.)
 
@@ -51,8 +51,8 @@ KOSPI와 KOSDAC 데이터를 pykrx모듈로 수집하고, 네이버 뉴스의 �
 pip install -r Requirements.txt
 ```
 
-를 통해 라이브러리들을 받아주시고, 환경에 맞게 Pytorch(https://pytorch.org/get-started/locally/)와 Deep Graph Library(https://www.dgl.ai/pages/start.html)를 설치해주세요.
-본 프로젝트는 Wandb logging을 하도록 구현되어 있습니다. 
+를 통해 라이브러리들을 받아주시고, 환경에 맞게 [Pytorch](https://pytorch.org/get-started/locally/)와 [Deep Graph Library](https://www.dgl.ai/pages/start.html)를 설치해주세요.
+본 프로젝트는 [Wandb](https://wandb.ai/home) logging을 하도록 구현되어 있습니다. 
 
 **2. Preprocessing**
 
@@ -69,7 +69,7 @@ python main.py data_preprocessing
 뉴스 데이터는 Multiprocess사용시 15분내외, 아니면 3시간 내외쯤, 주가 데이터는 30분 내외쯤 걸립니다.
 
 
- KRX에서 IP 차단을 가끔 먹입니다. (expecting value: line 1 column 1 (char 0) 이 에러가 뜹니다)
+ KRX에서 IP 차단을 가끔 먹입니다. ```(expecting value: line 1 column 1 (char 0)``` 이 에러가 뜹니다)
 
 
 코드 실행이 끝나면 dataset{날짜}의 폴더가 생기고, 내부에 sector와 회사명 별로 정리된 폴더들이 생깁니다.
