@@ -96,9 +96,15 @@ python main.py train_gnn {date} {strategy}
 
 
 코드를 실행하면 training{date}.bin 데이터를 활용해 학습을 진행합니다. 학습은 {strategy}에 해당하는 지표를 예측하도록 학습됩니다.
+
+
 {strategy}는 up_ratio, profit, end_price 3개가 있습니다.
+
+
 일단 50000epoch으로 설정해두고, 50epoch마다 저장되도록 합니다. 1epoch당 5초쯤 걸립니다. 
-신기하게 빠르게 수렴하지않고, 30000epoch이 넘어가도 학습 하면서 더 loss가 줄어듭니다(validation도!). 다만 그게 미래의 데이터를 꼭 잘 맞춘다는 것을 보장하지는 아마 않을겁니다..?
+
+
+신기하게 빠르게 수렴하지않고, 30000epoch이 넘어가도 학습 하면서 더 loss가 줄어듭니다(validation도!).
 
 
 **4. Inference**
@@ -117,14 +123,26 @@ checkpoint와 strategy는 동일한 strategy여야합니다!
 
 
 2023년 06월 12일까지의 Data를 기반으로, 13일 Data를 예측한 엑셀입니다.
+
+
 종가의 경우 한 데이터(골드엔에스)가 상당히 이상하게 예측 되어있는데요, 모델 이상이라기보단 MinMax Scaling 알고리즘의 문제입니다.
+
+
 10000원에서 20일동안 1000원까지 급락한 데이터를 1.0에서 0.0이 되도록 수치를 바꾸는데, 모델에서 0.8이라는 수치를 뱉으면 이게 8000원을 의미하게 되고, 하루만에 8배로 오른다는 그런.. 해석이 됩니다.
+
 문제는 이게 다른 종목에서는 0.8이라는 수치가 일반적으로 급변까지는 아니기 때문에, 감안을 좀 못하는 것 같습니다.
 
 
 
 이것 때문에 등락율과 이익율 strategy를 새로 고려했습니다...
 
+##References
+
+https://github.com/SKTBrain/KoBERT/tree/master/kobert_hf Kobert
+https://arxiv.org/pdf/2110.07190.pdf WHY PROPAGATE ALONE? PARALLEL USE OF LABELS AND FEATURES ON GRAPHS
+https://arxiv.org/pdf/2103.13355v4.pdf Bag of Tricks for Node Classification with Graph Neural Networks
+https://arxiv.org/pdf/2009.03509v5.pdf  Masked Label Prediction: Unified Message Passing Model for Semi-Supervised Classification
+https://link.springer.com/article/10.1007/s11042-022-13231-1 A graph neural network-based stock forecasting method utilizing multi-source heterogeneous data fusion
 
 ##Todo?
 
@@ -134,3 +152,4 @@ checkpoint와 strategy는 동일한 strategy여야합니다!
 - 데이터의 날짜 길이가 고정이 안되어있어서 date embedding 가져오는게 좀 골치아픕니다.(특히 Pretraining) 아마 이건 금방 고쳐볼 것 같습니다. (고치고나서 학습 제대로 하면 ckpt올려보는 쪽으로!)
 - 그래프 구성에서 Edge나 Node Feature를 더 넣거나, 더 줄여볼 수 있습니다. 경제학적인 해석이 들어갈 수도 있겠네요!
 - 종가/등락율/이익율 3가지 전략 말고도 다른 방식도 고려해볼 수도 있긴 합니다.
+- GNN 모델을 다양하게 시도해볼 수 있을 것 같습니다.
