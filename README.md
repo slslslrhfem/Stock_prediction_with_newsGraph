@@ -9,7 +9,7 @@
 KOSPI와 KOSDAQ 데이터를 pykrx모듈로 수집하고, 네이버 뉴스의 제목과 본문(썸네일 본문으로, 본문 전체는 아닙니다)을 bs4 모듈로 수집하여 활용합니다.
 
 
-제목과 본문은 Pretrain된 KOBERT를 활용하여 Top10까지 모아서 Length 768의 Embedding을 구해둡니다.
+제목과 본문은 Top10까지 모아서 Pretrain된 KOBERT로 Length 768의 Embedding을 구합니다.
 
 
 위 데이터들로 Graph를 구성하게 되는데, 각 Node의 Feature로는 다음 데이터들이 Embedding되어 사용됩니다.
