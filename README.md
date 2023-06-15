@@ -37,9 +37,9 @@ KOSPI와 KOSDAC 데이터를 pykrx모듈로 수집하고, 네이버 뉴스의 �
 
 ###1. 라이브러리 설치
 
-'''
+```
 pip install -r Requirements.txt
-'''
+```
 
 를 통해 라이브러리들을 받아주시고, 환경에 맞게 Pytorch(https://pytorch.org/get-started/locally/)와 Deep Graph Library(https://www.dgl.ai/pages/start.html)를 설치해주세요.
 본 프로젝트는 Wandb logging을 하도록 구현되어 있습니다. 
@@ -48,9 +48,9 @@ pip install -r Requirements.txt
 
 먼저
 
-'''
+```
 python main.py data_preprocessing
-'''
+```
 
 위 코드를 실행하면, 실행 날짜의 어제까지의 주가 데이터와 뉴스 데이터를 불러옵니다.
 만약 오후 11시에 코드를 돌려서 오늘까지의 데이터를 얻고싶다면 data_preprocessing.py 파일의 end_date = datetime.now() - timedelta(1) 부분에서 - timedelta(1)를 지워주시면 됩니다.
@@ -68,9 +68,9 @@ python main.py data_preprocessing
 다음
 
 
-'''
+```
 python main.py graph_construct {date}
-'''
+```
 
 
 코드를 실행하면 dataset{date}의 데이터를 활용해 그래프를 구성합니다. Training용과 Inference용 2개를 구성하며, Inference는 아직 장이 열리지 않은 다음날의 Node도 포함하고 있습니다.
@@ -80,9 +80,9 @@ python main.py graph_construct {date}
 ###3. Training
 
 
-'''
+```
 python main.py train_gnn {date} {strategy}
-'''
+```
 
 
 코드를 실행하면 training{date}.bin 데이터를 활용해 학습을 진행합니다. 학습은 {strategy}에 해당하는 지표를 예측하도록 학습됩니다.
@@ -93,9 +93,9 @@ python main.py train_gnn {date} {strategy}
 
 ###4. Inference
    
-'''
+```
 python main.py predict_price {checkpoint_path} {date} {strategy}
-'''
+```
 
 
 코드를 실행하면 inferece{date}.bin과 {checkpoint_path} 체크포인트를 활용하여 마지막 날의 {strategy} 지표를 예측하고, 지표가 좋은 순서대로 정리하여 excel파일을 생성합니다.
