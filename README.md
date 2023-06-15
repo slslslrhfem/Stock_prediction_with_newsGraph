@@ -61,14 +61,15 @@ pip install -r Requirements.txt
 python main.py data_preprocessing
 ```
 
-위 코드를 실행하면, 실행 날짜의 어제까지의 주가 데이터와 뉴스 데이터를 불러옵니다.
-만약 오후 11시에 코드를 돌려서 오늘까지의 데이터를 얻고싶다면 data_preprocessing.py 파일의 end_date = datetime.now() - timedelta(1) 부분에서 - timedelta(1)를 지워주시면 됩니다.
-1달 분량의 데이터를 가져오게 됩니다. 이를 늘리거나 줄이고 싶다면 역시나  data_preprocessing.py 파일의 start_date = end_date - timedelta(30) 부분을 수정해주세요.
+위 코드를 실행하면, 실행 날짜의 전날까지의 주가 데이터와 뉴스 데이터를 불러옵니다. 코드 실행 중 날짜가 변해도 괜찮습니다.
+
 
 
 1달 분량 기준으로 
-뉴스 데이터는 Multiprocess사용시 15분내외, 아니면 3시간 내외쯤 걸리는 것 같습니다.
-주가 데이터는 30분 내외쯤 걸립니다. Sleep없이는 5분이면 되기는 한데 KRX에서 IP 차단을 자주 먹입니다. 물론 Sleep 걸어도 가끔 먹입니다..(expecting value: line 1 column 1 (char 0) 이 에러가 뜹니다)
+뉴스 데이터는 Multiprocess사용시 15분내외, 아니면 3시간 내외쯤, 주가 데이터는 30분 내외쯤 걸립니다.
+
+
+ KRX에서 IP 차단을 가끔 먹입니다. (expecting value: line 1 column 1 (char 0) 이 에러가 뜹니다)
 
 
 코드 실행이 끝나면 dataset{날짜}의 폴더가 생기고, 내부에 sector와 회사명 별로 정리된 폴더들이 생깁니다.
