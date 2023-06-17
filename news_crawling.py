@@ -34,22 +34,14 @@ def news_crawling(query, day,sector, today_datetime):
         
         with open(filename,'wb') as fw:
             pickle.dump(new_row,fw)
-        #news_df.to_excel(filename, index=False)
+        #news_df.to_excel(filename, index=False) #엑셀보다 dict가 여러모로 나은 것 같음..
         
 
-        
-    ################# 데이터 전처리 #################
-
-    #print('데이터프레임 변환\n')
-    
-
-    #print('엑셀 저장 완료 | 경로 : {}\\{}\n'.format(folder_path, xlsx_file_name))
     
 def start_crawling(data):
     query,sector = data
     for i in range(30):
         today_datetime = datetime.today() - timedelta(i+1)
         day = (today_datetime).strftime("%Y.%m.%d")
-        news_crawling(query, day,sector, today_datetime) # 본문의 경우 크롤링이 클린하게 되지 않거나, 경우에 따라 아예 안되는 경우도 있습니다.
-        # 이게 뉴스가 있는 사이트가 다 다르다보니 생기는 현상.. 다만 일부가 Mask된 Data여도 사용할 수 있는 모델이라 일단은 씁니다
+        news_crawling(query, day,sector, today_datetime) 
     return 0

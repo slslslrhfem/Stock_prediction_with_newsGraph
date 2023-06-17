@@ -4,6 +4,7 @@ from graph_training import train_gnn, predict_price
 import sys
 
 def main():
+    #여기서 date 쓰실 때 코드 돌리는 date가 아니라, data_preprocessing한 date를 쓰셔야합니다. dataset20230612 라면 15일에 돌려도 date를 20230612로!
     if sys.argv[1]=='data_preprocessing':
         data_preprocessing()
     if sys.argv[1]=='graph_construct': # use with date, ex) main.py graph_construct 20230612 -> dataset20230612를 불러옴

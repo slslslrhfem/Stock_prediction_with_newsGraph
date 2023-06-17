@@ -86,7 +86,7 @@ class graph_price_predictor(pl.LightningModule):
         self.strategy = strategy
         self.sector_emb = nn.Embedding(16,128)
         self.masking_emb = nn.Embedding(2,32)
-        self.position_emb = nn.Embedding(num_date, 256)
+        self.position_emb = nn.Embedding(128, 256) # 128 == max(num_date)
         self.conv1 = dglnn.RelGraphConv(in_dim, hidden_dim, 8,regularizer='basis', num_bases=2)
         self.bn1 = nn.BatchNorm1d(hidden_dim)
         self.conv2 = dglnn.RelGraphConv(hidden_dim, hidden_dim, 8,regularizer='basis', num_bases=2)
@@ -116,7 +116,7 @@ class graph_price_predictor(pl.LightningModule):
         max_date = max(graph.ndata['date'])+1 #0~18까지 값이 있으면 19일차 까지 있는거
         last_day_idx = [i*max_date+max_date-1 for i in range(int(len(graph.ndata['date'])/max_date))] #마지막날 데이터를 validation으로 사용하기위해 아예 가림. 
         random_idx = np.random.choice(len(graph.ndata[self.strategy]), int(0.3*len(graph.ndata[self.strategy]))) # 30%를 Masking하되, 이미 가려진 last_day는 제외
-        mask_idx = [i for i in random_idx if i % max_date != 18]# 학습은 Node들을 Masking하고, 그 Node를 예측하는 Label tricking을 사용한다.
+        mask_idx = [i for i in random_idx if i % max_date != max_date-1]# 학습은 Node들을 Masking하고, 그 Node를 예측하는 Label tricking을 사용한다.
         target = copy.deepcopy(graph.ndata[self.strategy][mask_idx]) 
         graph.ndata['Masking'] = torch.zeros(len(graph.ndata[self.strategy])).to(device)
         for idx in mask_idx: # 직접 가린 데이터들
@@ -180,7 +180,7 @@ class graph_price_predictor(pl.LightningModule):
     
         prediction = self(masked_graph, feature, efeat).to(torch.float32)
         masking_prediction_loss = F.mse_loss(prediction[mask_idx].to(torch.float32), (target).unsqueeze(1).to(torch.float32))
-        self.log('val_mask_loss', masking_prediction_loss, batch_size=1) # loss가 validation loss임에도 상당히 analytic하게 떨어짐.. 
+        self.log('val_mask_loss', masking_prediction_loss, batch_size=1) # loss가 validation loss임에도 상당히 analytic하게 떨어짐..  
         return masking_prediction_loss
 
     def configure_optimizers(self):
@@ -223,14 +223,14 @@ def predict_price(model_path,date, strategy):
                 pred_price = prediction[i] * np.exp(datas.ndata['end_price'][i-1])
                 last_price = (datas.ndata['end_price'][i-1]-1)*(datas.ndata['max_value'][i-1]-datas.ndata['min_value'][i-1]) + datas.ndata['min_value'][i-1]
                 up_ratio_list.append(float(prediction[i])) # up_ratio는 전일 종가대비, profit은 당일 시가대비 비율이 들어갑니다.
-                price_list.append(float((1+prediction[i])*last_price)) # 이거는 엄밀히는 up_ratio에서는 맞고, profit에서는 조금 다르긴 합니다. (당일 시가를 가져오기 힘든 경우가 꽤 있음. 특히 마지막 날)
+                price_list.append(float((1+prediction[i]/100)*last_price)) # 이거는 엄밀히는 up_ratio에서는 맞고, profit에서는 조금 다르긴 합니다. (당일 시가를 가져오기 힘든 경우가 꽤 있음. 특히 마지막 날)
 
             #profit, 당일 시가 대비 얼마나 오를지가 prediction
             elif strategy == 'profit':
                 pred_price = prediction[i] # 이 경우는 비율을 예측한거고, 예측값의 open_price가 안주어져있어서 엄밀히는 가격이 아니긴 한데 변수명을 그대로 둡니다
                 last_price = (datas.ndata['end_price'][i-1]-1)*(datas.ndata['max_value'][i-1]-datas.ndata['min_value'][i-1]) + datas.ndata['min_value'][i-1]
                 up_ratio_list.append(float(prediction[i])) # up_ratio는 전일 종가대비, profit은 당일 시가대비 비율이 들어갑니다.
-                price_list.append(float((1+prediction[i])*last_price)) 
+                price_list.append(float((1+prediction[i]/100)*last_price)) 
 
                 
             model_output.append([float(prediction[i]),float(datas.ndata['max_value'][i]),float(datas.ndata['min_value'][i])])
@@ -256,15 +256,16 @@ def predict_price(model_path,date, strategy):
     sorted_price = price_list[inds]
     sorted_name = name_list[inds]
     sorted_ticker = ticker_list[inds]
-    sorted_last_price = sorted_price/(1+sorted_up_ratio)
+    sorted_last_price = sorted_price/(1+sorted_up_ratio/100)
     sorted_model_output = model_output[inds]
     sorted_sector_list = sector_list[inds]
 
     fin_list=[]
-    df = stock.get_market_ohlcv(str(int(date)+1),market="ALL")
+    df = stock.get_market_ohlcv(str(int(date)+1),market="ALL") # 이거는 토,일요일 고려를 안한 구현입니다. dataset이 12일이면, 13일의 주가 데이터를 가져옵니다. 만약 15일을 가져오고 싶다면 1을 3으로 바꿔야하긴 합니다.
+    # 이미 열린 개장일은 가져올 수 있고, 따라서 공휴일 등이 끼여있어도 돌아가도록 짰지만, 다음 개장일이 무엇인지 가져오기는 꽤 까다롭습니다(공휴일 등)..
     portfolio_val = 0 # 당일 시가로 매수를 했다면 과연..?
     for i in range(len(sorted_name)):
-         # 이거는 토,일요일 고려를 안한 구현입니다. dataset이 12일이면, 13일의 주가 데이터를 가져옵니다. 만약 15일을 가져오고 싶다면 1을 3으로 바꿔야하긴 합니다.
+        
         true_data = [df.loc[sorted_ticker[i]].values.tolist()[0],df.loc[sorted_ticker[i]].values.tolist()[3], df.loc[sorted_ticker[i]].values.tolist()[3]/df.loc[sorted_ticker[i]].values.tolist()[0]]
         data = [sorted_name[i], sorted_up_ratio[i], sorted_price[i], sorted_ticker[i], sorted_last_price[i], sorted_sector_list[i],sorted_model_output[i], true_data]
         if i<20:
