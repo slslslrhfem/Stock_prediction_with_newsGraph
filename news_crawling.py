@@ -3,30 +3,37 @@ from bs4 import BeautifulSoup
 import requests
 from datetime import datetime, timedelta
 import pickle
+from urllib.parse import quote
+from time import sleep
 
 
-def news_crawling(query, day,sector, today_datetime, to_file = True): # 이 부분 코드 작동하는지 확인 좀 해야하긴 할듯..
+def news_crawling(query, day,sector, today_datetime, to_file = True): # 이 부분 코드 작동하는지 자주 확인 좀 해야하긴 할듯..
+
+    end_date = datetime.now() - timedelta(1) 
+    end_date = end_date.strftime('%Y%m%d')
     
     #print('브라우저를 실행시킵니다(자동 제어)\n')
-
-    news_url = 'https://search.naver.com/search.naver?where=news&sm=tab_pge&query={0}&sort=1&photo=0&field=0&pd=3&ds={1}&de={2}'.format(query, day, day)
+    news_url = f"https://search.naver.com/search.naver?where=news&sm=tab_pge&query={query}&sort=1&photo=0&field=0&pd=3&ds={day}&de={day}"
+    #print(news_url, "크롤링중", end='\r')
     # HTTP GET 요청을 보내고 응답을 받아옴
     response = requests.get(news_url)
     news_dict ={}
+
+    
 
     # BeautifulSoup을 사용하여 HTML 파싱
     soup = BeautifulSoup(response.text, 'html.parser')
 
     # 뉴스 기사의 제목과 본문 일부를 추출하는 코드
-    articles = soup.select(".type01 > li")
-
-    for article in articles: 
-        title = article.select_one("a._sp_each_title").text.strip()
-        summary = article.select_one("dd").text.strip()
+    articles = soup.select(".news_area")
+    print(day,'의', query,' 회사의 기사 수는', len(articles) ,'입니다. ---------------------',end='\r')
+    for i,article in enumerate(articles): 
+        title = article.select_one("a.news_tit").text.strip()
+        summary = article.select_one("a.api_txt_lines.dsc_txt_wrap").text.strip()
         new_row = {
                         'title' : title,
                         'article' : summary}
-        filename = 'dataset/{}/{}/{}_{}_{}_top{}.pickle'.format(sector, query, query, day, today_datetime.strftime("%A"),i+1)
+        filename = 'dataset{}/{}/{}/{}_{}_{}_top{}.pickle'.format(end_date,sector, query, query, day, today_datetime.strftime("%A"),i+1)
         if to_file:
             os.makedirs(os.path.dirname(filename), exist_ok=True)
             with open(filename,'wb') as fw:

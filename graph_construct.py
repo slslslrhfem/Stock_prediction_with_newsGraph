@@ -109,6 +109,7 @@ def graph_construct(date):
         sector_node = all_sectors.index(Sector)
         company_end_prices=[]
 
+
         for i in range(len(trade_data[ticker])-1): # 각 날짜마다
             last_day = trade_data[ticker][i][0] # 주가 기록이 있는 마지막 날짜. 주말이나 공휴일 등이 끼어있을 경우 today와 1일 이상 차이날 수 있다.
             today = trade_data[ticker][i+1][0]
@@ -141,7 +142,7 @@ def graph_construct(date):
             tickers.append(int(ticker))
             dateinfos.append(date_info)
             up_ratios.append(trade_data[ticker][i+1][7])
-            print('현재 회사는', name,'이고, 노드 정보는', sector_node, volume, end_price, date_info, title, article, '이 들어가는 중입니다.')
+            #print('현재 회사는', name,'이고, 노드 정보는', sector_node, volume, end_price, date_info, title, article, '이 들어가는 중입니다.')
             for news in news_edges:
                 if company_idx != avail_name_list.index(news): # news 내용과 관련된 엣지.
                     u.append(int(i+data_days * company_idx))
@@ -174,6 +175,7 @@ def graph_construct(date):
                 u.append(i+data_days*company_idx) #양방향으로 다 넣어주되, 역이 동치는 아마..도 아니므로( 두 Node 중 하나만 최고/최저 거래니까? ) Edge 종류는 다르게 줌. 
                 e_feature.append(7)
             # 원래는 Max 종가나 Max 등락도 있었는데, 이를 연결하면 예측해야하는 요소와 너무 종속이라 일단은 뺌
+
         max_price = max(company_end_prices)
         min_price = min(company_end_prices)
         for i in range(len(trade_data[ticker])-1):
@@ -291,8 +293,9 @@ def graph_construct(date):
                     inf_v.append(int(i+data_days * company_idx-1))#오늘에서
                     inf_u.append(int(i+data_days * company_idx))#전날로. 다만 앞날의 데이터를 전날로 넘겨주는것이 상식적으로는 애매하긴 하다. 굳이 이유를 찾자면 예시로 16일의 데이터를 예측하기 위해 13일의 데이터를 보는데, 13일의 데이터가 14일의 데이터에 영향을 받는? 느낌
                     inf_e_feature.append(3)
+                print(today,date_info, title)
             else: #마지막날
-                last_day = trade_data[ticker][i][0]
+                last_day = trade_data[ticker][i+1][0]
                 lastday = datetime.strptime(str(last_day),'%Y-%m-%d %H:%M:%S')
                 to = lastday + timedelta(4) # 다음 개장일 모르니까 4일 이후로. 날짜가 넘어가도 괜찮다. 어차피 뉴스 파일이 있는지 없는지 확인한 후에 있으면 가져오는 형태
                 today = to.strftime('%Y-%m-%d %H:%M:%S')
@@ -306,14 +309,13 @@ def graph_construct(date):
                 inf_sectors.append(sector_node)
                 inf_volumes.append(0.0) # Mask는 하되 예측할 필요는 없게 구성할 듯
                 inf_end_prices.append(0.0) # Mask하게될 지표. 모델 1
-                inf_dateinfos.append(date_info+1)
+                inf_dateinfos.append(date_info+2)
                 inf_titles.append(title)
                 inf_articles.append(article)
                 inf_tickers.append(int(ticker))
                 inf_up_ratios.append(0) # Mask하게될 지표. 모델 2
                 inf_profits.append(0) # Mask하게될 지표. 모델 3
                 #print('현재 회사는', name,'이고, 노드 정보는', sector_node, volume, end_price, date_info, title, article, '이 들어가는 중입니다.')
-                
         
         for i in range(len(trade_data[ticker])-1): # 회사별로 가장 거래량이 낮은 날짜와 높은 날짜 Node에 전부 연결. 종가나 등락을 연결하면 예측해야하는 요소와 너무 종속이라 일단은 뺌
             if max_volume_index != i+data_days*company_idx:#selfloop은 필요 없으니..
@@ -342,7 +344,7 @@ def graph_construct(date):
         company_idx+=1
         #print('현재 Graph 구성은', inf_u,inf_v,'입니다. max가격과 min가격은', inf_max_price, inf_min_price,'node feature들은 다음과 같습니다')
         #print(inf_sectors, inf_volumes, inf_end_prices, inf_maxs, inf_mins, inf_dateinfos)
-    
+        
     g2 = dgl.graph((inf_u,inf_v))
     g2.edata['edge_feature'] = torch.tensor(inf_e_feature)
     g2.ndata['sector'] = torch.tensor(inf_sectors)
@@ -412,37 +414,7 @@ class NewsDataset(torch.utils.data.Dataset): # 기사 내용과 제목에서 BER
         return len(self.article_input_ids)
     
 def get_news_embedding(title, article,model, tokenizer): # title은 (회사수 , 10)차원으로 string을 담고있는 형태.
-    """
-    model.eval()
-    article_emb=[]
-    title_emb=[]
-    title = np.array(title)
-    article = np.array(article)
-    with open('title.npy', 'wb') as f:
-        np.save(f, title)
-    with open('article.npy', 'wb') as f:
-        np.save(f, article)
-    torch.cuda.empty_cache()
-    with torch.no_grad():
-        for top_i in range(10):
-            top_title = title[:,top_i]
-            top_article = article[:,top_i]
-            title_inputs = tokenizer.batch_encode_plus(top_title,max_length = 128, padding='max_length', truncation = True)
-            article_inputs = tokenizer.batch_encode_plus(top_article, max_length = 128, padding='max_length', truncation = True)
-            #print(torch.tensor(article_inputs['input_ids']).shape, torch.tensor(article_inputs['attention_mask']).shape)
-            article_embedding = model(input_ids = torch.tensor(article_inputs['input_ids']).to(device),  attention_mask = torch.tensor(article_inputs['attention_mask']).to(device)) #(회사 수*날짜 수,768)
-            title_embedding = model(input_ids = torch.tensor(title_inputs['input_ids']).to(device),  attention_mask = torch.tensor(title_inputs['attention_mask']).to(device))
-            #print(article_embedding.pooler_output.shape)
-            if len(article_emb)==0:
-                article_emb = article_embedding.pooler_output.cpu()
-                title_emb = title_embedding.pooler_output.cpu()
-            else:
-                article_emb = torch.cat((article_emb,article_embedding.pooler_output.cpu()), dim=1) #(다 돌면 회사 수 * 7680이 되도록)
-                title_emb = torch.cat((title_emb, title_embedding.pooler_output.cpu()), dim=1)
-            del article_embedding, title_embedding
-            gc.collect()
-    return title_emb, article_emb
-    """
+    
     model.eval()
     torch.cuda.empty_cache()
     with torch.no_grad():

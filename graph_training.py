@@ -199,13 +199,14 @@ def predict_price(model_path,date, strategy):
     datas=test_dataset[0]
 
     num_date = max(datas.ndata['date'])+1
-    classifier_model = graph_price_predictor(1536 + 420,128,num_date, strategy)
+    classifier_model = graph_price_predictor(1536 + 420,128,num_date, strategy) # 1536은 text, 420은 나머지 embedding
     checkpoint = torch.load(model_path)
     classifier_model.load_state_dict(checkpoint["state_dict"])
 
     
     prediction = get_prediction(datas,classifier_model)
     for i in range(len(prediction)):
+        print(datas.ndata['date'][i],num_date)
         if datas.ndata['date'][i] ==num_date-1:
             ticker = datas.ndata['ticker'][i]
             ticker_list.append(str(ticker.item()).zfill(6))
@@ -219,14 +220,14 @@ def predict_price(model_path,date, strategy):
 
             elif strategy == 'up_ratio':
                 pred_price = prediction[i] * np.exp(datas.ndata['end_price'][i-1])
-                last_price = (datas.ndata['end_price'][i-1]-1)*(datas.ndata['max_value'][i-1]-datas.ndata['min_value'][i-1]) + datas.ndata['min_value'][i-1]
+                last_price = (datas.ndata['end_price'][i-1])*(datas.ndata['max_value'][i-1]-datas.ndata['min_value'][i-1]) + datas.ndata['min_value'][i-1]
                 up_ratio_list.append(float(prediction[i])) # up_ratio는 전일 종가대비, profit은 당일 시가대비 비율이 들어갑니다.
                 price_list.append(float((1+prediction[i]/100)*last_price)) # 이거는 엄밀히는 up_ratio에서는 맞고, profit에서는 조금 다르긴 합니다. (당일 시가를 가져오기 힘든 경우가 꽤 있음. 특히 마지막 날)
 
             #profit, 당일 시가 대비 얼마나 오를지가 prediction
             elif strategy == 'profit':
                 pred_price = prediction[i] # 이 경우는 비율을 예측한거고, 예측값의 open_price가 안주어져있어서 엄밀히는 가격이 아니긴 한데 변수명을 그대로 둡니다
-                last_price = (datas.ndata['end_price'][i-1]-1)*(datas.ndata['max_value'][i-1]-datas.ndata['min_value'][i-1]) + datas.ndata['min_value'][i-1]
+                last_price = (datas.ndata['end_price'][i-1])*(datas.ndata['max_value'][i-1]-datas.ndata['min_value'][i-1]) + datas.ndata['min_value'][i-1]
                 up_ratio_list.append(float(prediction[i])) # up_ratio는 전일 종가대비, profit은 당일 시가대비 비율이 들어갑니다.
                 price_list.append(float((1+prediction[i]/100)*last_price)) 
 
@@ -263,8 +264,10 @@ def predict_price(model_path,date, strategy):
     # 이미 열린 개장일은 가져올 수 있고, 따라서 공휴일 등이 끼여있어도 돌아가도록 짰지만, 다음 개장일이 무엇인지 가져오기는 꽤 까다롭습니다(공휴일 등)..
     portfolio_val = 0 # 당일 시가로 매수를 했다면 과연..?
     for i in range(len(sorted_name)):
-        
-        true_data = [df.loc[sorted_ticker[i]].values.tolist()[0],df.loc[sorted_ticker[i]].values.tolist()[3], df.loc[sorted_ticker[i]].values.tolist()[3]/df.loc[sorted_ticker[i]].values.tolist()[0]]
+        if df.loc[sorted_ticker[i]].values.tolist()[0]!=0:
+            true_data = [df.loc[sorted_ticker[i]].values.tolist()[0],df.loc[sorted_ticker[i]].values.tolist()[3], df.loc[sorted_ticker[i]].values.tolist()[3]/df.loc[sorted_ticker[i]].values.tolist()[0]]
+        else:
+            true_data=['Not given yet!',0,1]
         data = [sorted_name[i], sorted_up_ratio[i], sorted_price[i], sorted_ticker[i], sorted_last_price[i], sorted_sector_list[i],sorted_model_output[i], true_data]
         if i<20:
             portfolio_val += (true_data[2]-1)*5  # %단위로 만들기 위해 100을 곱하고 20개 항목을 사므로 20을 나눔
