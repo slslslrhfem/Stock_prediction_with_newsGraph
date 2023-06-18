@@ -141,7 +141,7 @@ def graph_construct(date):
             tickers.append(int(ticker))
             dateinfos.append(date_info)
             up_ratios.append(trade_data[ticker][i+1][7])
-            #print('현재 회사는', name,'이고, 노드 정보는', sector_node, volume, end_price, date_info, title, article, '이 들어가는 중입니다.')
+            print('현재 회사는', name,'이고, 노드 정보는', sector_node, volume, end_price, date_info, title, article, '이 들어가는 중입니다.')
             for news in news_edges:
                 if company_idx != avail_name_list.index(news): # news 내용과 관련된 엣지.
                     u.append(int(i+data_days * company_idx))
@@ -180,7 +180,7 @@ def graph_construct(date):
             maxs.append(max_price)
             mins.append(min_price)
         company_end_prices = np.array(company_end_prices)
-        company_end_prices = (company_end_prices-min_price) / (max_price - min_price) + 1 # min-max scaling to 1~2. 0은 masked value로 사용하기 위함
+        company_end_prices = (company_end_prices-min_price) / (max_price - min_price) # min-max scaling to 0~1. 0은 masked value라 의미가 겹치긴 한데, 학습시 별도의 Masking 토큰을 사용한다.
         end_prices.extend(company_end_prices)
         #print('현재 Graph 구성은', u,v,'입니다. max가격과 min가격은', max_price, min_price,'node feature들은 다음과 같습니다')
         #print(sectors, volumes, end_prices, maxs, mins, dateinfos)
@@ -337,7 +337,7 @@ def graph_construct(date):
             inf_maxs.append(inf_max_price)
             inf_mins.append(inf_min_price)
         inf_company_end_prices = np.array(inf_company_end_prices)
-        inf_company_end_prices = (inf_company_end_prices-inf_min_price) / (inf_max_price - inf_min_price) + 1 # min-max scaling to 1~2. 0은 masked value
+        inf_company_end_prices = (inf_company_end_prices-inf_min_price) / (inf_max_price - inf_min_price) # min-max scaling to 0~1. 0은 masked value라 의미가 겹치긴 한데, 학습시 별도의 Masking 토큰을 사용한다.
         inf_end_prices.extend(inf_company_end_prices) 
         company_idx+=1
         #print('현재 Graph 구성은', inf_u,inf_v,'입니다. max가격과 min가격은', inf_max_price, inf_min_price,'node feature들은 다음과 같습니다')

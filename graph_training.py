@@ -73,9 +73,9 @@ def train_gnn(date, strategy):
     
    
     wandb_logger = WandbLogger()
-    checkpoint_callback = ModelCheckpoint(dirpath = 'graph_checkpoints/', save_top_k = 10, filename=str(strategy)+'_'+str(date)+'_bn_3layer_graph-{epoch:02d}-{mask_loss:.6f}-{val_mask_loss:.6f}', monitor="val_mask_loss")
+    checkpoint_callback = ModelCheckpoint(dirpath = 'graph_checkpoints/', save_top_k = 10, filename=str(strategy)+'_'+str(date)+'_bn_2layer_graph-{epoch:02d}-{mask_loss:.6f}-{val_mask_loss:.6f}', monitor="val_mask_loss")
     trainer = pl.Trainer(logger = wandb_logger, accelerator='auto', devices=1 if torch.cuda.is_available() else None,
-                          max_epochs=50000,detect_anomaly=True,callbacks=[checkpoint_callback],check_val_every_n_epoch = 50)
+                          max_epochs=1000,detect_anomaly=True,callbacks=[checkpoint_callback])
     trainer.fit(classifier_model, train_loader, train_loader) # epoch이 사실상 10000이 넘어갈때 까지 계속 loss가 줄어서 validation을 50 epoch당 한번만
     # validation때 맞춰야하는 값들 분명 training때 mask해서 all 0로 넣어주는걸 print까지해서 확인했는데 수상할정도로 val_mask_loss가 잘 떨어짐.. 잘 되는거라 좋은거긴 한데 의심이 됨..
     return 0
@@ -103,7 +103,7 @@ class graph_price_predictor(pl.LightningModule):
         # Apply graph convolution and activation.zx
         h = self.bn1(F.relu(self.conv1(g, h, efeat)))
         h = self.bn2(F.relu(self.conv2(g, h, efeat)))
-        h = self.bn3(F.relu(self.conv3(g, h, efeat)))
+        #h = self.bn3(F.relu(self.conv3(g, h, efeat)))
         #h = self.bn4(F.relu(self.conv4(g, h, efeat)))
 
         h = self.linear1(h)
@@ -164,13 +164,13 @@ class graph_price_predictor(pl.LightningModule):
         masked_graph = graph
         end_prices = masked_graph.ndata[self.strategy].to(torch.int).unsqueeze(1).to(torch.float32) # 1~2 or 0. 0은 masking된 경우이다. 다만 이게 Label 형태가 아니라 feature에 0을 그냥 집어넣는게 Label embedding 형태에서는 괜찮은데(증명이 있음),
         # Feature에서는 Model에서 학습을 제대로 할지 애매하므로 Masking Label Feature를 넣어서 일단은 처리.
-        volumes = masked_graph.ndata['volume'].unsqueeze(1) # 1~log(max(volume)) or 0. 거래량이 100억쯤 되면 20?이니 아주 커지진 않음
+        volumes = masked_graph.ndata['volume'].unsqueeze(1) # 1~log(max(volume)) or 0. 
         title_embedding = masked_graph.ndata['title_embedding'].to(torch.float32) #-1~1. 기사 or 제목이 완전히 주어지지 않는, 즉 하루동안 뉴스가 아예 없는 경우에 들어가는 vector가 0-vector가 아니고 BERT('')값임에 유의하자. 0-vector가 더 좋을수도 있음
         article_embedding = masked_graph.ndata['article_embedding'].to(torch.float32) # -1~1
         date_info = masked_graph.ndata['date'].to(torch.int) # int, will feed in embedding layer
         sector = masked_graph.ndata['sector'].to(torch.int) # int, will feed in embedding layer
         max_price = torch.log(masked_graph.ndata['max_value']).unsqueeze(1).to(torch.float32) # 1~6쯤
-        min_price = torch.log(masked_graph.ndata['min_value']).unsqueeze(1).to(torch.float32) # 1~6쯤 Feature Range가 조금씩 다르긴 한데, 큰 격차가 있지는 않아서 concat해서 사용해도 무리는 없다!
+        min_price = torch.log(masked_graph.ndata['min_value']).unsqueeze(1).to(torch.float32) # 1~6쯤 Feature Range가 조금씩 다르긴 한데, 큰 격차가 있지는 않아서 concat해서 사용
 
         masking_embedding = self.masking_emb(graph.ndata['Masking'].to(torch.int))
         date_embedding = self.position_emb(date_info).to(torch.float32)
@@ -212,12 +212,10 @@ def predict_price(model_path,date, strategy):
 
             #minmax, minmax scaling된 가격을 prediction
             if strategy == 'end_price':
-
-                pred_price = prediction[i]*(datas.ndata['max_value'][i]-datas.ndata['min_value'][i]) + datas.ndata['min_value'][i]
-                last_price = (datas.ndata['end_price'][i-1]-1)*(datas.ndata['max_value'][i-1]-datas.ndata['min_value'][i-1]) + datas.ndata['min_value'][i-1]
-                up_ratio_list.append(float(pred_price/last_price))
+                pred_price = float(prediction[i])*(float(datas.ndata['max_value'][i])-float(datas.ndata['min_value'][i])) + datas.ndata['min_value'][i]
+                last_price = (datas.ndata['end_price'][i-1])*(datas.ndata['max_value'][i-1]-datas.ndata['min_value'][i-1]) + datas.ndata['min_value'][i-1]
+                up_ratio_list.append((float(pred_price/last_price)-1)*100)
                 price_list.append(float(pred_price))
-
 
             elif strategy == 'up_ratio':
                 pred_price = prediction[i] * np.exp(datas.ndata['end_price'][i-1])
@@ -299,7 +297,7 @@ def get_prediction(graph, model):
     masking_embedding = model.masking_emb(graph.ndata['Masking'].to(torch.int))
     date_embedding = model.position_emb(date_info).to(torch.float32)
     sector_embedding = model.sector_emb(sector).to(torch.float32)
-    feature = torch.cat([end_prices, volumes, masking_embedding, max_price, min_price, date_embedding, sector_embedding, title_embedding, article_embedding],dim=1).to(torch.float32)# 아마 16000쯤..? 근데 15000이상이 text긴함. text embedding 줄여도 될지도..
+    feature = torch.cat([end_prices, volumes, masking_embedding, max_price, min_price, date_embedding, sector_embedding, title_embedding, article_embedding],dim=1).to(torch.float32)
     efeat = graph.edata['edge_feature'].to(torch.int)
     prediction = model(graph, feature, efeat).to(torch.float32)
     return prediction
