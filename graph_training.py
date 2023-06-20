@@ -75,7 +75,7 @@ def train_gnn(date, strategy):
     wandb_logger = WandbLogger()
     checkpoint_callback = ModelCheckpoint(dirpath = 'graph_checkpoints/', save_top_k = 10, filename=str(strategy)+'_'+str(date)+'_bn_2layer_graph-{epoch:02d}-{mask_loss:.6f}-{val_mask_loss:.6f}', monitor="val_mask_loss")
     trainer = pl.Trainer(logger = wandb_logger, accelerator='auto', devices=1 if torch.cuda.is_available() else None,
-                          max_epochs=1000,detect_anomaly=True,callbacks=[checkpoint_callback])
+                          max_epochs=2000,detect_anomaly=True,callbacks=[checkpoint_callback])
     trainer.fit(classifier_model, train_loader, train_loader) # epoch이 사실상 10000이 넘어갈때 까지 계속 loss가 줄어서 validation을 50 epoch당 한번만
     # validation때 맞춰야하는 값들 분명 training때 mask해서 all 0로 넣어주는걸 print까지해서 확인했는데 수상할정도로 val_mask_loss가 잘 떨어짐.. 잘 되는거라 좋은거긴 한데 의심이 됨..
     return 0
@@ -145,7 +145,10 @@ class graph_price_predictor(pl.LightningModule):
         efeat = masked_graph.edata['edge_feature'].to(torch.int)
     
         prediction = self(masked_graph, feature, efeat).to(torch.float32)
+        if self.strategy == 'end_price':
+            prediction = self.activation(prediction) # 나머지 전략들은 0~1이 아니라 activation(특히 sigmoid)를 못씀
         masking_prediction_loss = F.mse_loss(prediction[mask_idx].to(torch.float32), (target).unsqueeze(1).to(torch.float32))
+        #print('training',prediction[mask_idx],target)
         self.log('mask_loss', masking_prediction_loss)
 
         return masking_prediction_loss
@@ -175,12 +178,17 @@ class graph_price_predictor(pl.LightningModule):
         masking_embedding = self.masking_emb(graph.ndata['Masking'].to(torch.int))
         date_embedding = self.position_emb(date_info).to(torch.float32)
         sector_embedding = self.sector_emb(sector).to(torch.float32)
-        feature = torch.cat([end_prices, volumes, masking_embedding, max_price, min_price, date_embedding, sector_embedding, title_embedding, article_embedding],dim=1).to(torch.float32)# 아마 16000쯤..? 근데 15000이상이 text긴함. text embedding 줄여도 될지도..
+        feature = torch.cat([end_prices, volumes, masking_embedding, max_price, min_price, date_embedding, sector_embedding, title_embedding, article_embedding],dim=1).to(torch.float32)
         efeat = masked_graph.edata['edge_feature'].to(torch.int)
     
         prediction = self(masked_graph, feature, efeat).to(torch.float32)
+        if self.strategy == 'end_price':
+            prediction = self.activation(prediction)
         masking_prediction_loss = F.mse_loss(prediction[mask_idx].to(torch.float32), (target).unsqueeze(1).to(torch.float32))
-        self.log('val_mask_loss', masking_prediction_loss, batch_size=1) # loss가 validation loss임에도 상당히 analytic하게 떨어짐..  
+        #end_price 학습시에, 초반 loss가 60가까이 뛰는데 이게 수학적으로 가능한건지 모르겠음. prediction도 sigmoid라 0~1이고 target도 0~1인데..
+        
+        #print('validation',prediction[mask_idx],target)
+        self.log('val_mask_loss', masking_prediction_loss, batch_size=1) 
         return masking_prediction_loss
 
     def configure_optimizers(self):
@@ -206,7 +214,10 @@ def predict_price(model_path,date, strategy):
     
     prediction = get_prediction(datas,classifier_model)
     for i in range(len(prediction)):
-        print(datas.ndata['date'][i],num_date)
+        last_price = (datas.ndata['end_price'][i+1])*(datas.ndata['max_value'][i+1]-datas.ndata['min_value'][i+1]) + datas.ndata['min_value'][i+1]
+        ticker = datas.ndata['ticker'][i+1]
+        dateinfo = datas.ndata['date'][i+1]
+        print(last_price,ticker,i, dateinfo)
         if datas.ndata['date'][i] ==num_date-1:
             ticker = datas.ndata['ticker'][i]
             ticker_list.append(str(ticker.item()).zfill(6))
@@ -233,6 +244,7 @@ def predict_price(model_path,date, strategy):
 
                 
             model_output.append([float(prediction[i]),float(datas.ndata['max_value'][i]),float(datas.ndata['min_value'][i])])
+            asdf
     up_ratio_list = np.array(up_ratio_list)
     price_list = np.array(price_list)
     ticker_list = np.array(ticker_list)

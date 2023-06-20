@@ -12,7 +12,7 @@ import pickle
 import time
 import torch
 import multiprocessing
-
+import gc
 from torch import nn, Tensor
 from torch.optim import Optimizer
 from torch.utils.data import DataLoader, RandomSampler, DistributedSampler, random_split
@@ -41,25 +41,49 @@ def data_preprocessing(to_file):
 
     pbar = tqdm(zip(ticker_list, name_list, Sector_Label))
 
+    file = open('news_num.txt', 'w', encoding='utf-8')
+    no_article_list = []
+    no_article_list2 = []
 
     for ticker, name, Sector in pbar: # 뉴스 크롤링
+        
         meta_dict = {}
         meta_dict['sector'] = Sector
         meta_dict['name'] = name
         meta_dict['ticker'] = ticker
 
-        filename = 'dataset{}/{}/{}/meta.pickle'.format(end_date,Sector,name)
+        filename = 'dataset{}/{}/{}/meta.pickle'.format(end_date,Sector,name)#일단은 Metadata. 안 쓰긴 하는 거같음
         os.makedirs(os.path.dirname(filename), exist_ok=True)
         with open(filename,'wb') as fw:
             pickle.dump(meta_dict, fw)
-        #start_crawling((name,Sector,True))
-
-    
-    with multiprocessing.Pool(5) as p: # 근데 이 코드가 돌다가 Port에러가 뜨기도 합니다.(아마 한 CPU에 Task 2개가 동시에 할당 되면 그런 것 같습니다) 
-        #본 경우에는 Pool 안에 있는 숫자 5를 줄여보시고, 그래도 안되면 위 loop내의 51번째줄 start_crawling(name,Sector,True) 주석을 삭제하고 아래 코드 1줄을 지운 뒤 해보시길 바랍니다! 속도차이는 5배 넘게 나는 것 같습니다..
-        r= list(tqdm(p.imap(start_crawling, zip(name_list, Sector_Label, [to_file for i in range(len(Sector_Label))])), total=len(name_list)))
+        news_dict = start_crawling((name,Sector,True))
+        pbar.set_description("%s를 크롤링해오는 중입니다. 전체 기사의 갯수는 %s입니다." % (name,str(len(news_dict))))
+        file.write("%s를 크롤링해오는 중입니다. 전체 기사의 갯수는 %s입니다.\n" % (name,str(len(news_dict))))
+        if len(news_dict)==0:
+            no_article_list.append([ticker,name,Sector])
         
+        del news_dict
+        gc.collect()
+        
+    for ticker, name, Sector in pbar:
+        #뉴스를 찾기 못한 종목에 대해 한 번 더 크롤링 시도. 정말 뉴스가 없는 것일수도 있습니다!
+        folder = 'dataset{}/{}/{}'.format(end_date, Sector, name)
+        _, _, files = next(os.walk(folder))
+        file_count = len(files)
+        if file_count==1:
+            news_dict = start_crawling((name,Sector,True))
+            pbar.set_description("뉴스가 주어지지 않아 다시 %s를 크롤링해오는 중입니다. 전체 기사의 갯수는 %s입니다." % (name,str(len(news_dict))))
 
+
+
+
+    #with multiprocessing.Pool(5) as p: # 근데 이 코드가 돌다가 Port에러가 뜨기도 합니다.
+        #본 경우에는 Pool 안에 있는 숫자 5를 줄여보시고, 그래도 안되면 위 loop내의 51번째줄 start_crawling(name,Sector,True) 주석을 삭제하고 아래 코드 1줄을 지운 뒤 해보시길 바랍니다! 속도차이는 5배 넘게 나는 것 같습니다..
+        #r= list(tqdm(p.imap(start_crawling, zip(name_list, Sector_Label, [to_file for i in range(len(Sector_Label))])), total=len(name_list)))
+    # 멀티프로세싱이 훨씬 빠르긴한데, IP차단쪽이 훨씬 빡세게 들어옵니다.. 
+    # 선택지는 멀티프로세싱을 사용하고 크롤링에 성공한 데이터만 사용하기 vs 멀티프로세싱을 사용하고, 크롤링에 실패해도 news가 없다 가정하고 사용하기 vs 천천히 크롤링하기(이래도 차단은 일부 당하긴 함) 정도가 있습니다.
+        
+    asdf
     print("주가를 크롤링 해옵니다.")
     for tickers in tqdm(ticker_list,position=0): # 주가 크롤링
         try:

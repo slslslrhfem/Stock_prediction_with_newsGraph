@@ -97,8 +97,9 @@ def graph_construct(date):
     tickers=[]
     up_ratios=[]
     print("training용 그래프를 구성합니다")
-
-    data_days = len(trade_data[ticker_list[0]]) - 1 #데이터가 30일치 있으면, 29일의 Data는 뉴스와 주가가 있고, 1일은 뉴스 데이터만 있다. -> Node 갯수가 회사 당 29임
+    data_days = len(trade_data[ticker_list[0]]) - 1 #주가 데이터가 30일치 있으면, 29일의 Data는 주가와 그에 해당하는 뉴스가 있고, 1일은 뉴스 데이터만 있다. -> Node 갯수가 회사 당 29임
+    
+    
     pbar = tqdm(zip(avail_ticker_list, avail_name_list, avail_Sector_Label))
     for ticker, name, Sector in pbar: #각 종목마다
         pbar.set_description("processing %s" % name)
@@ -212,7 +213,7 @@ def graph_construct(date):
 
     del g, e_feature, sectors, volumes, end_prices, article_embeddings, title_embeddings, dateinfos
     gc.collect()
-
+    
 
     print("inference용 그래프를 구성합니다")
 
@@ -255,8 +256,7 @@ def graph_construct(date):
                 
                 title, article = get_news(folder_name, Sector, name, dates)
                 news_edges = get_news_edges(title,article,avail_name_list)
-                inf_titles.append(title) # 이려면 3000개 회사의 top1~top10(없으면 그냥 '') article이 들어감. titles[:,0] -> 모든 회사의 top 1 기사
-                inf_articles.append(article)
+                
                 
                 volume = np.log(trade_data[ticker][i+2][5])
                 end_price = trade_data[ticker][i+2][4]
@@ -278,6 +278,9 @@ def graph_construct(date):
                 inf_tickers.append(int(ticker))
                 inf_profits.append(profit)
                 inf_up_ratios.append(upratio)
+                inf_titles.append(title)
+                inf_articles.append(article)
+
                 for news in news_edges:
                     if company_idx != avail_name_list.index(news): # news 내용과 관련된 엣지.
                         inf_u.append(int(i+data_days * company_idx))
@@ -308,8 +311,8 @@ def graph_construct(date):
 
                 inf_sectors.append(sector_node)
                 inf_volumes.append(0.0) # Mask는 하되 예측할 필요는 없게 구성할 듯
-                inf_end_prices.append(0.0) # Mask하게될 지표. 모델 1
-                inf_dateinfos.append(date_info+2)
+                #inf_end_prices.append(0.0) # Mask하게될 지표. 모델 1 이거 min max 하고 나서 추가해야함
+                inf_dateinfos.append(date_info+1)
                 inf_titles.append(title)
                 inf_articles.append(article)
                 inf_tickers.append(int(ticker))
@@ -340,11 +343,12 @@ def graph_construct(date):
             inf_mins.append(inf_min_price)
         inf_company_end_prices = np.array(inf_company_end_prices)
         inf_company_end_prices = (inf_company_end_prices-inf_min_price) / (inf_max_price - inf_min_price) # min-max scaling to 0~1. 0은 masked value라 의미가 겹치긴 한데, 학습시 별도의 Masking 토큰을 사용한다.
-        inf_end_prices.extend(inf_company_end_prices) 
+        inf_end_prices.extend(inf_company_end_prices)
+        inf_end_prices.append(0.0) # 마지막날 inference용
         company_idx+=1
         #print('현재 Graph 구성은', inf_u,inf_v,'입니다. max가격과 min가격은', inf_max_price, inf_min_price,'node feature들은 다음과 같습니다')
         #print(inf_sectors, inf_volumes, inf_end_prices, inf_maxs, inf_mins, inf_dateinfos)
-        
+
     g2 = dgl.graph((inf_u,inf_v))
     g2.edata['edge_feature'] = torch.tensor(inf_e_feature)
     g2.ndata['sector'] = torch.tensor(inf_sectors)
