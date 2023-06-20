@@ -52,31 +52,40 @@ def data_preprocessing(to_file):
         os.makedirs(os.path.dirname(filename), exist_ok=True)
         with open(filename,'wb') as fw:
             pickle.dump(meta_dict, fw)
-        #news_dict = start_crawling((name,Sector,True))
-        #pbar.set_description("%s를 크롤링해오는 중입니다. 전체 기사의 갯수는 %s입니다." % (name,str(len(news_dict))))
+        news_dict = start_crawling((name,Sector,True)) # 이건 하나하나 크롤링. 멀티프로세싱쓰면 네이버에서 차단합니다ㅠ
+        pbar.set_description("%s를 크롤링해오는 중입니다. 전체 기사의 갯수는 %s입니다." % (name,str(len(news_dict))))
 
-
+    """
     with multiprocessing.Pool(5) as p: # 뉴스 크롤링,  근데 이 코드가 돌다가 Port에러가 뜨기도 합니다.
         #본 경우에는 Pool 안에 있는 숫자 5를 줄여보시고, 그래도 안되면 위 loop내의 51번째줄 start_crawling(name,Sector,True) 주석을 삭제하고 아래 코드 1줄을 지운 뒤 해보시길 바랍니다! 속도차이는 5배 넘게 나는 것 같습니다..
         r= list(tqdm(p.imap(start_crawling, zip(name_list, Sector_Label, [to_file for i in range(len(Sector_Label))])), total=len(name_list)))
-        
-    for ticker, name, Sector in pbar:
+    #멀티프로세싱이 빠르긴한데, 네이버에서 크롤링을 바로 차단해버려서 거의 진행이 안됩니다. 느리더라도 하나하나 해야하지 싶습니다..
+    """
+    pbar2 = tqdm(zip(ticker_list, name_list, Sector_Label))
+    for ticker, name, Sector in pbar2:
         #뉴스를 찾기 못한 종목에 대해 한 번 더 크롤링 시도. 정말 뉴스가 없는 것일수도 있습니다!
         folder = 'dataset{}/{}/{}'.format(end_date, Sector, name)
         _, _, files = next(os.walk(folder))
         file_count = len(files)
         if file_count==1:
             news_dict = start_crawling((name,Sector,True))
-            pbar.set_description("뉴스가 주어지지 않아 다시 %s를 크롤링해오는 중입니다. 전체 기사의 갯수는 %s입니다." % (name,str(len(news_dict))))
+            pbar2.set_description("뉴스가 주어지지 않아 다시 %s를 크롤링해왔습니다. 다시 가져온 전체 기사의 갯수는 %s입니다." % (name,str(len(news_dict))))
 
-
-    asdf
+    pbar3 = tqdm(zip(ticker_list, name_list, Sector_Label))
+    no_news=[]
+    for ticker, name, Sector in pbar3:
+        folder = 'dataset{}/{}/{}'.format(end_date, Sector, name)
+        _, _, files = next(os.walk(folder))
+        file_count = len(files)
+        if file_count==1:
+            no_news.append(name)
+    print(no_news,"위 항목들은 뉴스가 하나도 없었거나, 크롤링이 불가능했습니다.")
     print("주가를 크롤링 해옵니다.")
     for tickers in tqdm(ticker_list,position=0): # 주가 크롤링
         try:
             time.sleep(0.5)
             trade_data = stock.get_market_ohlcv(start_date, end_date, str(tickers))
-            # expecting value: line 1 column 1 (char 0) -> krx쪽에서 ip 차단당하면 이 에러가 뜹니다. 한달치 데이터를 모든 주식에 대해 진행하니 한번에 너무 많이 요청하는거같기도.. 다만 krx는 공식 API도 안만들고, 굳이 다른 분이 노력해서 만든 Pykrx 크롤링 모듈까지 차단하는게 참..
+            # expecting value: line 1 column 1 (char 0) -> krx쪽에서 ip 차단당하면 이 에러가 뜹니다. 한달치 데이터를 모든 주식에 대해 진행하니 한번에 너무 많이 요청하는거같기도..
             if len(trade_data.reset_index().values.tolist())>minlen:
                 adding_list=trade_data.reset_index().values.tolist()[(len(trade_data.values.tolist())-minlen):]
                 adding_list=np.array(adding_list)
@@ -97,4 +106,4 @@ def data_preprocessing(to_file):
             continue
     with open('dataset{}/trade_data.pickle'.format(end_date),'wb') as fw:
             pickle.dump(tot_dict, fw)
-    return r, tot_dict
+    return r, tot_dict 

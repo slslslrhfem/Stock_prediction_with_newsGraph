@@ -17,7 +17,7 @@ from pykrx import stock
 import random
 import pandas as pd
 import FinanceDataReader as fdr
-
+import os
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -194,7 +194,22 @@ class graph_price_predictor(pl.LightningModule):
     def configure_optimizers(self):
         opt = torch.optim.Adam(self.parameters(), lr = 0.001)
         return opt
-    
+
+def get_all_prediction(ckpt_dir): # 추후 별도 추가를 위해서라도 strategy 정리가 필요할수도?..
+    files = os.listdir(ckpt_dir)
+    for ckpt in files:
+        splits = ckpt.split('_')
+        if splits[0]=='end': 
+            date = splits[2]
+            predict_price(ckpt_dir+'/'+ckpt, date, 'end_price')
+        elif splits[0]=='up':
+            date = splits[2]
+            predict_price(ckpt_dir+'/'+ckpt, date, 'up_ratio')
+        else:
+            date = splits[1] 
+            predict_price(ckpt_dir+'/'+ckpt, date, 'profit')
+        
+
 
 def predict_price(model_path,date, strategy):
     name_list=[]
@@ -214,10 +229,6 @@ def predict_price(model_path,date, strategy):
     
     prediction = get_prediction(datas,classifier_model)
     for i in range(len(prediction)):
-        last_price = (datas.ndata['end_price'][i+1])*(datas.ndata['max_value'][i+1]-datas.ndata['min_value'][i+1]) + datas.ndata['min_value'][i+1]
-        ticker = datas.ndata['ticker'][i+1]
-        dateinfo = datas.ndata['date'][i+1]
-        print(last_price,ticker,i, dateinfo)
         if datas.ndata['date'][i] ==num_date-1:
             ticker = datas.ndata['ticker'][i]
             ticker_list.append(str(ticker.item()).zfill(6))
@@ -244,7 +255,6 @@ def predict_price(model_path,date, strategy):
 
                 
             model_output.append([float(prediction[i]),float(datas.ndata['max_value'][i]),float(datas.ndata['min_value'][i])])
-            asdf
     up_ratio_list = np.array(up_ratio_list)
     price_list = np.array(price_list)
     ticker_list = np.array(ticker_list)
@@ -288,8 +298,11 @@ def predict_price(model_path,date, strategy):
     fin_list = np.array(fin_list)
 
     df = pd.DataFrame(data = fin_list,columns = ['name', 'up_ratio', 'predicted price', 'ticker', 'last price','sector','model output','actual_price(open, end, ratio if you buy this with open price)'])
-    print("위 모델이 추천하는 상위 20개 종목을 균일 배분하여 시가로 매수했다면 ",portfolio_val,"% 만큼 변한 상태로 종가에 판매할 수 있었습니다.")
-    df.to_excel('{}result{}.xlsx'.format(strategy, date), index=False)
+    result_str = model_path + "모델이 추천하는 상위 20개 종목을 균일 배분하여 시가로 매수했다면 " + str(portfolio_val) + "% 만큼 변한 상태로 종가에 판매할 수 있었습니다.\n"
+    print(result_str)
+    with open('result.txt', 'a') as the_file:
+        the_file.write(result_str)
+    df.to_excel('{}result.xlsx'.format(model_path[:-5]), index=False)
 
     return 0
 

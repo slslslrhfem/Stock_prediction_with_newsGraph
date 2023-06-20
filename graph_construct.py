@@ -296,7 +296,7 @@ def graph_construct(date):
                     inf_v.append(int(i+data_days * company_idx-1))#오늘에서
                     inf_u.append(int(i+data_days * company_idx))#전날로. 다만 앞날의 데이터를 전날로 넘겨주는것이 상식적으로는 애매하긴 하다. 굳이 이유를 찾자면 예시로 16일의 데이터를 예측하기 위해 13일의 데이터를 보는데, 13일의 데이터가 14일의 데이터에 영향을 받는? 느낌
                     inf_e_feature.append(3)
-                print(today,date_info, title)
+                #print(today,date_info, title)
             else: #마지막날
                 last_day = trade_data[ticker][i+1][0]
                 lastday = datetime.strptime(str(last_day),'%Y-%m-%d %H:%M:%S')

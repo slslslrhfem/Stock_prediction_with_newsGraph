@@ -1,0 +1,5 @@
+graph_checkpoints/end_price_20230619_bn_2layer_graph-epoch=14-mask_loss=0.084117-val_mask_loss=0.136605.ckpt모델이 추천하는 상위 20개 종목을 균일 배분하여 시가로 매수했다면 0.17764345347860533% 만큼 변한 상태로 종가에 판매할 수 있었습니다.
+graph_checkpoints/end_price_20230619_bn_2layer_graph-epoch=32-mask_loss=0.078598-val_mask_loss=0.137706.ckpt모델이 추천하는 상위 20개 종목을 균일 배분하여 시가로 매수했다면 -0.028218516750603273% 만큼 변한 상태로 종가에 판매할 수 있었습니다.
+graph_checkpoints/profit_20230619_bn_2layer_graph-epoch=10-mask_loss=7.281611-val_mask_loss=7.857731.ckpt모델이 추천하는 상위 20개 종목을 균일 배분하여 시가로 매수했다면 1.0967276619855493% 만큼 변한 상태로 종가에 판매할 수 있었습니다.
+graph_checkpoints/profit_20230619_bn_2layer_graph-epoch=32-mask_loss=7.007614-val_mask_loss=7.856415.ckpt모델이 추천하는 상위 20개 종목을 균일 배분하여 시가로 매수했다면 -0.9733298519007977% 만큼 변한 상태로 종가에 판매할 수 있었습니다.
+graph_checkpoints/up_ratio_20230619_bn_2layer_graph-epoch=100-mask_loss=5.645906-val_mask_loss=9.051225.ckpt모델이 추천하는 상위 20개 종목을 균일 배분하여 시가로 매수했다면 0.3588926294917333% 만큼 변한 상태로 종가에 판매할 수 있었습니다.
